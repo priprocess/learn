@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Learn · {{REPO_NAME}}</title>
+<style>
+  :root{--bg:#fff;--fg:#1a1a1a;--muted:#666;--accent:#2d6cdf;--panel:#f5f6f8;--border:#e2e4e8;}
+  @media (prefers-color-scheme:dark){:root{--bg:#15171b;--fg:#e8eaed;--muted:#9aa0a6;--accent:#6aa9ff;--panel:#1e2127;--border:#2c2f36;}}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--fg)}
+  header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+  header .repo{font-weight:600}
+  header .ver{color:var(--muted);font-size:13px}
+  .layout{display:flex;min-height:calc(100vh - 52px)}
+  nav{width:280px;border-right:1px solid var(--border);background:var(--panel);padding:16px;flex:none}
+  nav ul{list-style:none;margin:0;padding:0}
+  .cp{padding:8px 10px;border-radius:8px;cursor:pointer;display:flex;gap:8px;align-items:center}
+  .cp:hover{background:var(--bg)}
+  .cp.active{background:var(--bg);outline:1px solid var(--accent)}
+  .cp-icon{width:18px;text-align:center}
+  .cp-done .cp-icon{color:#2e9e5b}
+  .cp-current .cp-icon{color:var(--accent)}
+  .cp-upcoming{color:var(--muted)}
+  main{flex:1;padding:28px 36px;max-width:900px}
+  .doc-section{display:none}
+  .doc-section.active{display:block}
+  .doc-section h2{margin-top:0}
+  pre{background:var(--panel);padding:12px 14px;border-radius:8px;overflow:auto}
+  code{font-family:ui-monospace,Menlo,monospace}
+  .mermaid{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;margin:12px 0}
+  .ask-chip{position:fixed;right:22px;bottom:22px;background:var(--accent);color:#fff;border:none;border-radius:24px;padding:12px 18px;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:24px}
+  .overlay.show{display:flex}
+  .overlay .box{background:var(--bg);border-radius:14px;padding:28px;max-width:480px;text-align:center}
+  .overlay .box h3{margin-top:0}
+  .overlay .ex{background:var(--panel);border-radius:8px;padding:10px 12px;margin:14px 0;font-family:ui-monospace,Menlo,monospace;font-size:13px}
+  .overlay button{margin-top:8px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 16px;cursor:pointer}
+</style>
+</head>
+<body>
+<header>
+  <span class="repo">🧭 Learn · {{REPO_NAME}}</span>
+  <span class="ver">map v{{MAP_VERSION}}</span>
+</header>
+<div class="layout">
+  <nav><ul id="cp-list">{{CHECKPOINTS}}</ul></nav>
+  <main id="content">{{SECTIONS}}</main>
+</div>
+<button class="ask-chip" id="askChip">💬 Ask / switch to terminal</button>
+<div class="overlay" id="overlay">
+  <div class="box">
+    <h3>👉 Head to your terminal</h3>
+    <p>Claude is listening there. Ask anything about this repo — answers come back in the terminal.</p>
+    <div class="ex" id="exampleQ"></div>
+    <button id="closeOverlay">Got it</button>
+  </div>
+</div>
+<script>{{MERMAID_LIB}}</script>
+<script>
+(function(){
+  if (window.mermaid) {
+    try {
+      mermaid.initialize({ startOnLoad:false,
+        theme: matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'default' });
+    } catch(e){}
+  }
+  var sections = document.querySelectorAll('.doc-section');
+  var items = document.querySelectorAll('.cp');
+  function activate(id){
+    if(!id) return;
+    sections.forEach(function(s){ s.classList.toggle('active', s.id === id); });
+    items.forEach(function(it){ it.classList.toggle('active', it.dataset.target === id); });
+    if (window.mermaid){
+      var el = document.getElementById(id);
+      var d = el && el.querySelector('.mermaid:not([data-processed])');
+      if (d){ try { mermaid.run({ nodes:[d] }); } catch(e){} }
+    }
+    var h = document.querySelector('#' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + ' h2');
+    var t = h ? h.textContent : 'this section';
+    document.getElementById('exampleQ').textContent = 'Try: "Walk me through ' + t + ' in more detail."';
+  }
+  items.forEach(function(it){ it.addEventListener('click', function(){ activate(it.dataset.target); }); });
+  var current = document.querySelector('.cp-current');
+  activate(current ? current.dataset.target : (items[0] && items[0].dataset.target));
+  document.getElementById('askChip').addEventListener('click', function(){
+    document.getElementById('overlay').classList.add('show');
+  });
+  document.getElementById('closeOverlay').addEventListener('click', function(){
+    document.getElementById('overlay').classList.remove('show');
+  });
+})();
+</script>
+</body>
+</html>

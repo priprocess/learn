@@ -205,3 +205,58 @@ describe('buildView', () => {
     assert.ok(/cp-current[^>]*data-target="section-1"/.test(html));
   });
 });
+
+const { execFileSync } = require('node:child_process');
+
+describe('CLI', () => {
+  it('builds via the script entry using the real template + vendored mermaid', () => {
+    const dir = tmpdir();
+    const mapPath = path.join(dir, 'map.md');
+    const outPath = path.join(dir, 'learn-view.html');
+    fs.writeFileSync(mapPath, MAP_FIXTURE);
+    execFileSync('node', [
+      path.join(__dirname, 'build-view.cjs'),
+      mapPath,
+      path.join(dir, 'no-progress.json'),
+      outPath,
+      'cli-demo',
+    ]);
+    const html = fs.readFileSync(outPath, 'utf8');
+    assert.ok(html.includes('cli-demo'));
+    assert.ok(html.includes('id="section-1"'));
+  });
+});
+
+describe('real template integration', () => {
+  it('builds with the real template + vendored mermaid: self-contained, no leftover tokens', () => {
+    const dir = tmpdir();
+    const mapPath = path.join(dir, 'map.md');
+    const outPath = path.join(dir, 'learn-view.html');
+    fs.writeFileSync(
+      mapPath,
+      `---\ngenerated_at: x\nversion: 1\ntarget: .\n---\n\n` +
+        '## 1 · The big picture\nIntro.\n```mermaid\ngraph TD; A-->B;\n```\n\n' +
+        '## 2 · Setup\n- step one\n\n## FAQ\nnone\n'
+    );
+    buildView({
+      mapPath,
+      progressPath: path.join(dir, 'none.json'),
+      outPath,
+      templatePath: path.join(__dirname, '..', 'templates', 'view.html'),
+      mermaidPath: path.join(__dirname, '..', 'vendor', 'mermaid.min.js'),
+      repoName: 'realtpl',
+    });
+    const html = fs.readFileSync(outPath, 'utf8');
+    // No unreplaced template tokens. (Check the specific tokens, not a blanket
+    // "{{" — the inlined mermaid lib legitimately contains "{{" in its own code.)
+    for (const tok of ['{{REPO_NAME}}', '{{MAP_VERSION}}', '{{CHECKPOINTS}}', '{{SECTIONS}}', '{{MERMAID_LIB}}']) {
+      assert.ok(!html.includes(tok), 'no leftover token ' + tok);
+    }
+    // self-contained: no external resource loads
+    assert.ok(!/src\s*=\s*["']https?:/i.test(html), 'no external script src');
+    assert.ok(!/href\s*=\s*["']https?:/i.test(html), 'no external href');
+    assert.ok(!/<link\b/i.test(html), 'no <link> tags');
+    assert.ok(html.includes('realtpl'));
+    assert.ok(html.includes('class="mermaid"'));
+  });
+});
