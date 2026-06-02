@@ -100,3 +100,57 @@ describe('computeCheckpointStates', () => {
     ]);
   });
 });
+
+const { renderView } = require('./build-view.cjs');
+
+const FAKE_TEMPLATE = [
+  '<title>{{REPO_NAME}} v{{MAP_VERSION}}</title>',
+  '<ul>{{CHECKPOINTS}}</ul>',
+  '<main>{{SECTIONS}}</main>',
+  '<script>{{MERMAID_LIB}}</script>',
+].join('\n');
+
+const RENDER_SECTIONS = [
+  { index: 1, title: 'The big picture', isCheckpoint: true,
+    content: 'Intro paragraph.\n```mermaid\ngraph TD; A-->B;\n```' },
+  { index: 2, title: 'Setup', isCheckpoint: true, content: '- run `npm i`' },
+  { index: null, title: 'FAQ', isCheckpoint: false, content: 'Q and A.' },
+];
+
+describe('renderView', () => {
+  const html = renderView({
+    meta: { version: '7' },
+    sections: RENDER_SECTIONS,
+    progress: { completed: [1], current: 2, map_version: 7 },
+    repoName: 'acme',
+    template: FAKE_TEMPLATE,
+    mermaidLib: '/*MERMAIDLIB*/',
+  });
+
+  it('injects repo name, version and mermaid lib', () => {
+    assert.ok(html.includes('acme v7'));
+    assert.ok(html.includes('/*MERMAIDLIB*/'));
+  });
+
+  it('renders one section per heading with rendered markdown', () => {
+    assert.ok(html.includes('id="section-1"'));
+    assert.ok(html.includes('id="section-2"'));
+    assert.ok(html.includes('id="section-faq"'));
+    assert.ok(html.includes('<p>Intro paragraph.</p>'));
+    assert.ok(html.includes('<li>')); // the bullet list in Setup
+  });
+
+  it('bakes in checkpoint states with the right icons', () => {
+    assert.ok(/cp-done[^>]*>\s*<span class="cp-icon">✓/.test(html));
+    assert.ok(/cp-current[^>]*>\s*<span class="cp-icon">→/.test(html));
+  });
+
+  it('moves the mermaid block into a .mermaid div (not a code fence)', () => {
+    assert.ok(html.includes('<div class="mermaid">graph TD; A--&gt;B;</div>'));
+    assert.ok(!html.includes('```mermaid'));
+  });
+
+  it('leaves no unreplaced template tokens', () => {
+    assert.ok(!html.includes('{{'));
+  });
+});

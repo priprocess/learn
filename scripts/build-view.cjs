@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { marked } = require('marked');
 
 function escapeHtml(s) {
   return String(s)
@@ -78,7 +79,54 @@ function computeCheckpointStates(sections, progress) {
     });
 }
 
+const ICON = { done: '✓', current: '→', upcoming: '○' };
+
+function renderCheckpointList(states) {
+  return states
+    .map(
+      (c) =>
+        `<li class="cp cp-${c.state}" data-target="section-${c.index}">` +
+        `<span class="cp-icon">${ICON[c.state]}</span> ${c.index}. ${escapeHtml(c.title)}</li>`
+    )
+    .join('\n');
+}
+
+function renderSections(sections) {
+  return sections
+    .map((s) => {
+      const id = s.isCheckpoint ? `section-${s.index}` : 'section-faq';
+      const heading = s.isCheckpoint ? `${s.index} · ${s.title}` : s.title;
+      const mer = extractMermaid(s.content);
+      let bodyMd = s.content;
+      let diagram = '';
+      if (mer) {
+        bodyMd = s.content.replace(/```mermaid\n[\s\S]*?```/, '').trim();
+        diagram = `<div class="mermaid">${escapeHtml(mer)}</div>`;
+      }
+      return (
+        `<section id="${id}" class="doc-section">` +
+        `<h2>${escapeHtml(heading)}</h2>` +
+        diagram +
+        marked.parse(bodyMd) +
+        `</section>`
+      );
+    })
+    .join('\n');
+}
+
+function renderView({ meta, sections, progress, repoName, template, mermaidLib }) {
+  const states = computeCheckpointStates(sections, progress);
+  let html = template;
+  html = inject(html, '{{REPO_NAME}}', escapeHtml(repoName || 'this repo'));
+  html = inject(html, '{{MAP_VERSION}}', escapeHtml(String(meta.version ?? '1')));
+  html = inject(html, '{{CHECKPOINTS}}', renderCheckpointList(states));
+  html = inject(html, '{{SECTIONS}}', renderSections(sections));
+  html = inject(html, '{{MERMAID_LIB}}', mermaidLib);
+  return html;
+}
+
 module.exports = {
   escapeHtml, inject, parseFrontmatter, parseSections,
   extractMermaid, readProgress, computeCheckpointStates,
+  renderCheckpointList, renderSections, renderView,
 };
