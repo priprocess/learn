@@ -49,4 +49,36 @@ function parseSections(body) {
   return sections;
 }
 
-module.exports = { escapeHtml, inject, parseFrontmatter, parseSections };
+function extractMermaid(content) {
+  const m = /```mermaid\n([\s\S]*?)```/.exec(content);
+  return m ? m[1].trim() : null;
+}
+
+function readProgress(progressPath) {
+  try {
+    const p = JSON.parse(fs.readFileSync(progressPath, 'utf8'));
+    return {
+      completed: Array.isArray(p.completed) ? p.completed : [],
+      current: typeof p.current === 'number' ? p.current : 1,
+      map_version: p.map_version ?? null,
+    };
+  } catch {
+    return { completed: [], current: 1, map_version: null };
+  }
+}
+
+function computeCheckpointStates(sections, progress) {
+  return sections
+    .filter((s) => s.isCheckpoint)
+    .map((s) => {
+      let state = 'upcoming';
+      if (progress.completed.includes(s.index)) state = 'done';
+      if (s.index === progress.current) state = 'current';
+      return { index: s.index, title: s.title, state };
+    });
+}
+
+module.exports = {
+  escapeHtml, inject, parseFrontmatter, parseSections,
+  extractMermaid, readProgress, computeCheckpointStates,
+};
