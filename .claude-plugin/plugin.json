@@ -1,0 +1,10 @@
+{
+  "name": "learn",
+  "description": "Onboard onto an unfamiliar repo: generate a committed onboarding map, then take a guided, visual tour — questions you ask enrich the map for the next person.",
+  "version": "0.1.0",
+  "author": { "name": "priprocess" },
+  "homepage": "https://github.com/priprocess/learn",
+  "repository": "https://github.com/priprocess/learn",
+  "license": "MIT",
+  "keywords": ["onboarding", "learning", "codebase", "documentation", "tour"]
+}

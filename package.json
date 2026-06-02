@@ -1,0 +1,8 @@
+{
+  "name": "learn",
+  "version": "0.1.0",
+  "description": "Guided, visual repo onboarding plugin for Claude Code",
+  "engines": { "node": ">=18.0.0" },
+  "dependencies": { "marked": "^4.3.0" },
+  "scripts": { "test": "node --test scripts/build-view.test.cjs" }
+}

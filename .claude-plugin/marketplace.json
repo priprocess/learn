@@ -1,0 +1,15 @@
+{
+  "name": "learn",
+  "owner": { "name": "priprocess" },
+  "metadata": {
+    "description": "Guided, visual repo onboarding for newcomers"
+  },
+  "plugins": [
+    {
+      "name": "learn",
+      "source": "./",
+      "description": "Generate a committed onboarding map and take a guided, visual tour of any repo.",
+      "version": "0.1.0"
+    }
+  ]
+}
