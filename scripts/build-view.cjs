@@ -125,8 +125,39 @@ function renderView({ meta, sections, progress, repoName, template, mermaidLib }
   return html;
 }
 
+function buildView({ mapPath, progressPath, outPath, templatePath, mermaidPath, repoName }) {
+  const md = fs.readFileSync(mapPath, 'utf8');
+  const { meta, body } = parseFrontmatter(md);
+  const sections = parseSections(body);
+  const progress = readProgress(progressPath);
+  const template = fs.readFileSync(templatePath, 'utf8');
+  const mermaidLib = fs.readFileSync(mermaidPath, 'utf8');
+  const html = renderView({ meta, sections, progress, repoName, template, mermaidLib });
+  fs.mkdirSync(path.dirname(outPath), { recursive: true });
+  fs.writeFileSync(outPath, html);
+  return outPath;
+}
+
 module.exports = {
   escapeHtml, inject, parseFrontmatter, parseSections,
   extractMermaid, readProgress, computeCheckpointStates,
-  renderCheckpointList, renderSections, renderView,
+  renderCheckpointList, renderSections, renderView, buildView,
 };
+
+if (require.main === module) {
+  const [, , mapPath, progressPath, outPath, repoName] = process.argv;
+  if (!mapPath || !outPath) {
+    console.error('usage: build-view.cjs <mapPath> <progressPath> <outPath> [repoName]');
+    process.exit(1);
+  }
+  const root = path.resolve(__dirname, '..');
+  const out = buildView({
+    mapPath,
+    progressPath: progressPath || '',
+    outPath,
+    templatePath: path.join(root, 'templates', 'view.html'),
+    mermaidPath: path.join(root, 'vendor', 'mermaid.min.js'),
+    repoName: repoName || path.basename(process.cwd()),
+  });
+  console.log('Built ' + out);
+}
