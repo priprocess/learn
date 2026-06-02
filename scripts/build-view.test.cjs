@@ -154,3 +154,54 @@ describe('renderView', () => {
     assert.ok(!html.includes('{{'));
   });
 });
+
+const { buildView } = require('./build-view.cjs');
+
+function tmpdir() {
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'lbv-'));
+}
+
+const MAP_FIXTURE = `---
+generated_at: deadbee
+version: 3
+target: .
+---
+
+## 1 · The big picture
+Hello world.
+
+## FAQ
+Nothing yet.
+`;
+
+describe('buildView', () => {
+  it('writes a self-contained html file from a map (no progress file)', () => {
+    const dir = tmpdir();
+    const mapPath = path.join(dir, 'map.md');
+    const tplPath = path.join(dir, 'view.html');
+    const merPath = path.join(dir, 'mermaid.js');
+    const outPath = path.join(dir, 'out', 'learn-view.html');
+    fs.writeFileSync(mapPath, MAP_FIXTURE);
+    fs.writeFileSync(tplPath, '<h1>{{REPO_NAME}}</h1><ul>{{CHECKPOINTS}}</ul>' +
+      '<main>{{SECTIONS}}</main><script>{{MERMAID_LIB}}</script>' +
+      '<span>v{{MAP_VERSION}}</span>');
+    fs.writeFileSync(merPath, '/*MER*/');
+
+    const result = buildView({
+      mapPath,
+      progressPath: path.join(dir, 'missing.json'),
+      outPath,
+      templatePath: tplPath,
+      mermaidPath: merPath,
+      repoName: 'demo',
+    });
+
+    assert.strictEqual(result, outPath);
+    const html = fs.readFileSync(outPath, 'utf8');
+    assert.ok(html.includes('demo'));
+    assert.ok(html.includes('id="section-1"'));
+    assert.ok(html.includes('/*MER*/'));
+    // default progress -> section 1 is current
+    assert.ok(/cp-current[^>]*data-target="section-1"/.test(html));
+  });
+});
