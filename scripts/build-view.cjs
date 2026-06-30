@@ -79,32 +79,41 @@ function computeCheckpointStates(sections, progress) {
     });
 }
 
-const ICON = { done: '✓', current: '→', upcoming: '○' };
-
 function renderCheckpointList(states) {
   return states
-    .map(
-      (c) =>
-        `<li class="cp cp-${c.state}" data-target="section-${c.index}">` +
-        `<span class="cp-icon">${ICON[c.state]}</span> ${c.index}. ${escapeHtml(c.title)}</li>`
-    )
+    .map((c) => {
+      const pin = c.state === 'done' ? '✓' : String(c.index);
+      return (
+        `<li class="cp cp-${c.state}" data-target="section-${c.index}" tabindex="0">` +
+        `<span class="cp-pin" aria-hidden="true">${pin}</span>` +
+        `<span class="cp-text">${escapeHtml(c.title)}</span>` +
+        `</li>`
+      );
+    })
     .join('\n');
 }
 
 function renderSections(sections) {
+  const total = sections.filter((s) => s.isCheckpoint).length;
   return sections
     .map((s) => {
       const id = s.isCheckpoint ? `section-${s.index}` : 'section-faq';
       const heading = s.isCheckpoint ? `${s.index} · ${s.title}` : s.title;
+      const kicker = s.isCheckpoint ? `<div class="kicker">Stop ${s.index} of ${total}</div>` : '';
       const mer = extractMermaid(s.content);
       let bodyMd = s.content;
       let diagram = '';
       if (mer) {
         bodyMd = s.content.replace(/```mermaid\n[\s\S]*?```/, '').trim();
-        diagram = `<div class="mermaid">${escapeHtml(mer)}</div>`;
+        diagram =
+          `<div class="diagram">` +
+          `<button class="diagram-zoom" type="button" aria-label="Zoom diagram">⤢</button>` +
+          `<div class="mermaid">${escapeHtml(mer)}</div>` +
+          `</div>`;
       }
       return (
         `<section id="${id}" class="doc-section">` +
+        kicker +
         `<h2>${escapeHtml(heading)}</h2>` +
         diagram +
         marked.parse(bodyMd) +
