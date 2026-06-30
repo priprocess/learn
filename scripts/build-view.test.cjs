@@ -140,9 +140,14 @@ describe('renderView', () => {
     assert.ok(html.includes('<li>')); // the bullet list in Setup
   });
 
-  it('bakes in checkpoint states with the right icons', () => {
-    assert.ok(/cp-done[^>]*>\s*<span class="cp-icon">✓/.test(html));
-    assert.ok(/cp-current[^>]*>\s*<span class="cp-icon">→/.test(html));
+  it('bakes in checkpoint states as trail pins', () => {
+    // done pin shows a check; current/upcoming pins show their number.
+    // "you are here" + aria-current are applied at runtime by the viewer JS (to the
+    // viewed section), not baked into the generator output.
+    assert.ok(/cp-done[^>]*>\s*<span class="cp-pin" aria-hidden="true">✓/.test(html));
+    assert.ok(/cp-current[^>]*>\s*<span class="cp-pin" aria-hidden="true">2/.test(html));
+    assert.ok(html.includes('data-target="section-1"'));  // navigation hook preserved
+    assert.ok(!html.includes('you are here'));            // not static anymore
   });
 
   it('moves the mermaid block into a .mermaid div (not a code fence)', () => {
@@ -152,6 +157,21 @@ describe('renderView', () => {
 
   it('leaves no unreplaced template tokens', () => {
     assert.ok(!html.includes('{{'));
+  });
+
+  it('adds a "Stop N of M" kicker to checkpoint sections only', () => {
+    // RENDER_SECTIONS has 2 checkpoints (1, 2) + a FAQ, so M = 2
+    assert.ok(html.includes('<div class="kicker">Stop 1 of 2</div>'));
+    assert.ok(html.includes('<div class="kicker">Stop 2 of 2</div>'));
+    const faq = html.slice(html.indexOf('id="section-faq"'));
+    assert.ok(!faq.includes('class="kicker"')); // FAQ has no kicker
+  });
+
+  it('wraps the mermaid diagram in a .diagram block with a zoom button', () => {
+    assert.ok(html.includes('<div class="diagram">'));
+    assert.ok(html.includes('class="diagram-zoom"'));
+    // the .mermaid div (with escaped source) still exists inside the wrapper
+    assert.ok(html.includes('<div class="mermaid">graph TD; A--&gt;B;</div>'));
   });
 });
 

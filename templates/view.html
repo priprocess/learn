@@ -5,49 +5,135 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Learn · {{REPO_NAME}}</title>
 <style>
-  :root{--bg:#fff;--fg:#1a1a1a;--muted:#666;--accent:#2d6cdf;--panel:#f5f6f8;--border:#e2e4e8;}
-  @media (prefers-color-scheme:dark){:root{--bg:#15171b;--fg:#e8eaed;--muted:#9aa0a6;--accent:#6aa9ff;--panel:#1e2127;--border:#2c2f36;}}
+  /* ===== Theme tokens ===== */
+  body.clean{
+    --bg:#F7F3EE; --fg:#2B2723; --fg2:#6B635B; --accent:#7B2D3B; --accent-fg:#fff;
+    --panel:#F0EBE4; --card:#FFFDF9; --border:#E6DED6; --pin:#D8CFC2; --chip:#ECE4DA;
+    --radius:10px; --elev:0 1px 4px rgba(123,45,59,.10);
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --mono:ui-monospace,Menlo,Monaco,"Courier New",monospace;
+    font-family:var(--font);
+  }
+  @media (prefers-color-scheme:dark){
+    body.clean{
+      --bg:#1B1916; --fg:#E8E2D9; --fg2:#9A9186; --accent:#E0A07A; --accent-fg:#1B1916;
+      --panel:#1F1C18; --card:#211E19; --border:#2C2823; --pin:#3A332B; --chip:#322C24;
+      --elev:0 1px 6px rgba(0,0,0,.4);
+    }
+  }
+  body.classic{
+    --bg:#E8E0D4; --fg:#3A3532; --fg2:#6F675E; --accent:#7B2D3B; --accent-fg:#fff;
+    --panel:#F5F1EB; --card:#FFFDF9; --border:#3A3532; --pin:#3A3532; --chip:#E8E0D4;
+    --radius:0; --elev:3px 3px 0 rgba(58,53,50,.22);
+    --font:var(--mono); --mono:ui-monospace,"Courier New",Menlo,monospace;
+    font-family:ui-monospace,"Courier New",Menlo,monospace;
+  }
+
+  /* color-mix() (used for hover/ring/shadow tints) requires Chromium 111+, Firefox 113+, Safari 16.2+; degrades to no tint otherwise */
   *{box-sizing:border-box}
-  body{margin:0;font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--fg)}
-  header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
-  header .repo{font-weight:600}
-  header .ver{color:var(--muted);font-size:13px}
-  .layout{display:flex;min-height:calc(100vh - 52px)}
-  nav{width:280px;border-right:1px solid var(--border);background:var(--panel);padding:16px;flex:none}
+  body{margin:0;font-size:15px;line-height:1.65;background:var(--bg);color:var(--fg)}
+
+  /* ===== Header ===== */
+  header{display:flex;align-items:center;gap:10px;padding:11px 18px;background:var(--panel);border-bottom:1px solid var(--border)}
+  body.classic header{background:linear-gradient(180deg,#E8E0D4,#D8CFC2);border-bottom:2px solid #3A3532;font-weight:700}
+  .mac-close{display:none;width:13px;height:13px;border:2px solid #3A3532;background:#F5F1EB;flex:none}
+  body.classic .mac-close{display:block}
+  .brand{font-weight:700;color:var(--accent)}
+  .ver{color:var(--fg2);font-size:12px}
+  .seg{margin-left:auto;display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden}
+  body.classic .seg{border:2px solid #3A3532;border-radius:0}
+  .seg button{border:none;background:var(--chip);color:var(--fg2);font:600 11px/1 var(--font);
+    letter-spacing:.6px;text-transform:uppercase;padding:7px 13px;cursor:pointer}
+  .seg button.on{background:var(--accent);color:var(--accent-fg)}
+
+  /* ===== Layout ===== */
+  .layout{display:flex;min-height:calc(100vh - 53px)}
+  nav{width:264px;flex:none;background:var(--panel);border-right:1px solid var(--border);padding:18px 14px;overflow:auto}
+  body.classic nav{border-right:2px solid #3A3532}
+  .trail-summary{font:600 10px/1 var(--mono);letter-spacing:1.5px;text-transform:uppercase;color:var(--fg2);margin:2px 6px 14px}
+
+  /* ===== Trail rail ===== */
   nav ul{list-style:none;margin:0;padding:0}
-  .cp{padding:8px 10px;border-radius:8px;cursor:pointer;display:flex;gap:8px;align-items:center}
-  .cp:hover{background:var(--bg)}
-  .cp.active{background:var(--bg);outline:1px solid var(--accent)}
-  .cp-icon{width:18px;text-align:center}
-  .cp-done .cp-icon{color:#2e9e5b}
-  .cp-current .cp-icon{color:var(--accent)}
-  .cp-upcoming{color:var(--muted)}
-  main{flex:1;padding:28px 36px;max-width:900px}
+  .cp{position:relative;display:flex;align-items:flex-start;gap:12px;padding:9px 8px;min-height:44px;
+    border-radius:var(--radius);color:var(--fg2);cursor:pointer;font-size:13.5px}
+  .cp:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+  .cp:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .cp:not(:last-child)::before{content:"";position:absolute;left:21px;top:35px;height:calc(100% - 18px);width:2px;background:var(--pin)}
+  .cp-done:not(:last-child)::before{background:var(--accent)}
+  .cp-pin{position:relative;z-index:1;width:26px;height:26px;flex:none;border-radius:50%;
+    border:2px solid var(--pin);background:var(--panel);display:flex;align-items:center;justify-content:center;
+    font:600 11px/1 var(--mono);color:var(--fg2)}
+  body.classic .cp-pin{border-radius:0}
+  .cp-done .cp-pin{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+  .cp.active{color:var(--fg);font-weight:600;background:var(--card);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent)}
+  .cp.active .cp-pin{border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 14%,transparent)}
+  .cp.active:not(.cp-done) .cp-pin{color:var(--accent)}
+  .cp-text{padding-top:4px}
+  .cp-here{display:block;font-weight:400;font-size:11px;color:var(--fg2);margin-top:1px}
+
+
+  /* ===== Main / content ===== */
+  main{flex:1;padding:34px 44px;max-width:820px;overflow:auto}
   .doc-section{display:none}
   .doc-section.active{display:block}
-  .doc-section h2{margin-top:0}
-  pre{background:var(--panel);padding:12px 14px;border-radius:8px;overflow:auto}
-  code{font-family:ui-monospace,Menlo,monospace}
-  .mermaid{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;margin:12px 0}
-  .ask-chip{position:fixed;right:22px;bottom:22px;background:var(--accent);color:#fff;border:none;border-radius:24px;padding:12px 18px;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.2)}
-  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:24px}
+  .kicker{font:600 11px/1 var(--mono);letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:11px}
+  .doc-section h2{font-size:28px;font-weight:700;letter-spacing:-.3px;margin:0 0 14px}
+  body.classic .doc-section h2{font-weight:700;letter-spacing:0}
+  main p{margin:0 0 14px}
+  a{color:var(--accent)}
+  code{font-family:var(--mono);font-size:.88em;background:var(--chip);color:var(--accent);padding:1px 6px;border-radius:5px}
+  body.classic code{border-radius:0}
+  pre{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;overflow:auto}
+  pre code{background:none;color:var(--fg);padding:0}
+  blockquote{display:flex;gap:11px;margin:18px 0;padding:14px 16px;background:var(--card);
+    border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);color:var(--fg2)}
+  blockquote p{margin:0;max-width:none}
+
+  /* ===== Diagram ===== */
+  .diagram{position:relative;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin:14px 0}
+  body.classic .diagram{border:2px solid #3A3532}
+  .diagram-zoom{position:absolute;top:10px;right:10px;font:600 11px/1 var(--font);color:var(--accent);
+    background:var(--chip);border:1px solid var(--border);border-radius:6px;padding:6px 9px;cursor:pointer}
+  body.classic .diagram-zoom{border-radius:0;border:2px solid #3A3532}
+  .mermaid{display:flex;justify-content:center}
+  .mermaid svg{max-width:100%;height:auto}
+
+  /* ===== Ask chip + terminal overlay ===== */
+  .ask-chip{position:fixed;right:24px;bottom:22px;display:flex;align-items:center;gap:8px;
+    background:var(--accent);color:var(--accent-fg);border:none;border-radius:26px;padding:13px 20px;
+    font:600 14px/1 var(--font);cursor:pointer;box-shadow:0 6px 20px color-mix(in srgb,var(--accent) 35%,transparent)}
+  body.classic .ask-chip{border-radius:0;border:2px solid #3A3532;box-shadow:var(--elev)}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:24px;z-index:50}
   .overlay.show{display:flex}
-  .overlay .box{background:var(--bg);border-radius:14px;padding:28px;max-width:480px;text-align:center}
+  .overlay .box{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:14px;padding:28px;max-width:480px;text-align:center;box-shadow:var(--elev)}
+  body.classic .overlay .box{border:2px solid #3A3532;border-radius:0}
   .overlay .box h3{margin-top:0}
-  .overlay .ex{background:var(--panel);border-radius:8px;padding:10px 12px;margin:14px 0;font-family:ui-monospace,Menlo,monospace;font-size:13px}
-  .overlay button{margin-top:8px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 16px;cursor:pointer}
+  .overlay .ex{background:var(--chip);border-radius:8px;padding:10px 12px;margin:14px 0;font-family:var(--mono);font-size:13px}
+  .overlay .box button{margin-top:8px;background:var(--accent);color:var(--accent-fg);border:none;border-radius:8px;padding:9px 18px;cursor:pointer;font:600 14px/1 var(--font)}
+
+  /* ===== Zoom overlay ===== */
+  #zoomOverlay .zoom-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;width:min(92vw,1100px);max-height:88vh;overflow:auto;box-shadow:var(--elev)}
+  #zoomOverlay .zoom-box svg{width:100%;height:auto}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
-<body>
+<body class="clean">
 <header>
-  <span class="repo">🧭 Learn · {{REPO_NAME}}</span>
+  <span class="mac-close" aria-hidden="true"></span>
+  <span class="brand">✦ Learn · {{REPO_NAME}}</span>
   <span class="ver">map v{{MAP_VERSION}}</span>
+  <div class="seg" role="group" aria-label="Theme">
+    <button type="button" data-theme="clean" class="on" aria-pressed="true">Clean</button>
+    <button type="button" data-theme="classic" aria-pressed="false">Classic</button>
+  </div>
 </header>
 <div class="layout">
-  <nav><ul id="cp-list">{{CHECKPOINTS}}</ul></nav>
+  <nav><div class="trail-summary" id="trailSummary"></div><ul id="cp-list">{{CHECKPOINTS}}</ul></nav>
   <main id="content">{{SECTIONS}}</main>
 </div>
-<button class="ask-chip" id="askChip">💬 Ask / switch to terminal</button>
+<button class="ask-chip" id="askChip">💬 Ask a question</button>
+
 <div class="overlay" id="overlay">
   <div class="box">
     <h3>👉 Head to your terminal</h3>
@@ -56,38 +142,114 @@
     <button id="closeOverlay">Got it</button>
   </div>
 </div>
+
+<div class="overlay" id="zoomOverlay"><div class="zoom-box" id="zoomBox"></div></div>
+
 <script>{{MERMAID_LIB}}</script>
 <script>
 (function(){
-  if (window.mermaid) {
-    try {
-      mermaid.initialize({ startOnLoad:false,
-        theme: matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'default' });
-    } catch(e){}
+  var diagrams = [].slice.call(document.querySelectorAll('.mermaid'));
+  diagrams.forEach(function(d){ d.__src = d.textContent; });          // cache raw source for re-theming
+  var segButtons = [].slice.call(document.querySelectorAll('.seg button'));
+
+  function mermaidTheme(){
+    if (document.body.classList.contains('classic')) return 'neutral';
+    return matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'default';
   }
+  function initMermaid(){
+    if (!window.mermaid) return;
+    try { mermaid.initialize({ startOnLoad:false, theme: mermaidTheme() }); } catch(e){}
+  }
+  function renderDiagramIn(id){
+    if (!window.mermaid) return;
+    var el = document.getElementById(id);
+    var d = el && el.querySelector('.mermaid:not([data-processed])');
+    if (d){ try { mermaid.run({ nodes:[d] }); } catch(e){} }
+  }
+
   var sections = document.querySelectorAll('.doc-section');
   var items = document.querySelectorAll('.cp');
   function activate(id){
     if(!id) return;
     sections.forEach(function(s){ s.classList.toggle('active', s.id === id); });
-    items.forEach(function(it){ it.classList.toggle('active', it.dataset.target === id); });
-    if (window.mermaid){
-      var el = document.getElementById(id);
-      var d = el && el.querySelector('.mermaid:not([data-processed])');
-      if (d){ try { mermaid.run({ nodes:[d] }); } catch(e){} }
-    }
+    items.forEach(function(it){
+      var on = it.dataset.target === id;
+      it.classList.toggle('active', on);
+      if (on) it.setAttribute('aria-current', 'step'); else it.removeAttribute('aria-current');
+      var txt = it.querySelector('.cp-text');
+      var here = it.querySelector('.cp-here');
+      if (on && txt && !here){
+        here = document.createElement('small');
+        here.className = 'cp-here';
+        here.textContent = 'you are here';
+        txt.appendChild(here);
+      } else if (!on && here){
+        here.parentNode.removeChild(here);
+      }
+    });
+    renderDiagramIn(id);
     var h = document.querySelector('#' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + ' h2');
     var t = h ? h.textContent : 'this section';
     document.getElementById('exampleQ').textContent = 'Try: "Walk me through ' + t + ' in more detail."';
   }
-  items.forEach(function(it){ it.addEventListener('click', function(){ activate(it.dataset.target); }); });
+  items.forEach(function(it){
+    it.addEventListener('click', function(){ activate(it.dataset.target); });
+    it.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); activate(it.dataset.target); } });
+  });
+
+  // trail summary
+  var done = document.querySelectorAll('.cp-done').length;
+  document.getElementById('trailSummary').textContent = 'Your trail · ' + done + ' of ' + items.length + ' done';
+
+  // theme
+  function applyThemeClass(t){
+    document.body.classList.remove('clean','classic');
+    document.body.classList.add(t);
+    segButtons.forEach(function(b){
+      var on = b.dataset.theme === t;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+  function setTheme(t){
+    applyThemeClass(t);
+    try { localStorage.setItem('learn-theme', t); } catch(e){}
+    initMermaid();
+    diagrams.forEach(function(d){ d.textContent = d.__src; d.removeAttribute('data-processed'); });
+    var active = document.querySelector('.doc-section.active');
+    if (active) renderDiagramIn(active.id);
+    var zo = document.getElementById('zoomOverlay');
+    if (zo) zo.classList.remove('show');
+  }
+  segButtons.forEach(function(b){ b.addEventListener('click', function(){ setTheme(b.dataset.theme); }); });
+  try { var saved = localStorage.getItem('learn-theme'); if (saved === 'classic' || saved === 'clean') applyThemeClass(saved); } catch(e){}
+
+  // mermaid init + initial section
+  initMermaid();
   var current = document.querySelector('.cp-current');
   activate(current ? current.dataset.target : (items[0] && items[0].dataset.target));
-  document.getElementById('askChip').addEventListener('click', function(){
-    document.getElementById('overlay').classList.add('show');
+
+  // diagram zoom
+  var zoomOverlay = document.getElementById('zoomOverlay');
+  var zoomBox = document.getElementById('zoomBox');
+  document.addEventListener('click', function(e){
+    var z = e.target.closest ? e.target.closest('.diagram-zoom') : null;
+    if (!z) return;
+    var svg = z.parentElement.querySelector('.mermaid svg');
+    if (!svg) return;
+    zoomBox.innerHTML = '';
+    zoomBox.appendChild(svg.cloneNode(true));
+    zoomOverlay.classList.add('show');
   });
-  document.getElementById('closeOverlay').addEventListener('click', function(){
-    document.getElementById('overlay').classList.remove('show');
+  zoomOverlay.addEventListener('click', function(e){ if (e.target === zoomOverlay) zoomOverlay.classList.remove('show'); });
+
+  // ask overlay
+  var overlay = document.getElementById('overlay');
+  document.getElementById('askChip').addEventListener('click', function(){ overlay.classList.add('show'); });
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.classList.remove('show'); });
+  document.getElementById('closeOverlay').addEventListener('click', function(){ overlay.classList.remove('show'); });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape'){ overlay.classList.remove('show'); zoomOverlay.classList.remove('show'); }
   });
 })();
 </script>
