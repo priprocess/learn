@@ -2,6 +2,48 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { marked } = require('marked');
 
+const CALLOUT_TYPES = {
+  insight: { type: 'insight', icon: '💡', label: 'Insight' },
+  why: { type: 'insight', icon: '💡', label: 'Insight' },
+  note: { type: 'insight', icon: '💡', label: 'Insight' },
+  gotcha: { type: 'gotcha', icon: '⚠️', label: 'Gotcha' },
+  warning: { type: 'gotcha', icon: '⚠️', label: 'Gotcha' },
+  'watch out': { type: 'gotcha', icon: '⚠️', label: 'Gotcha' },
+  'where to look': { type: 'where', icon: '📍', label: 'Where to look' },
+  where: { type: 'where', icon: '📍', label: 'Where to look' },
+  files: { type: 'where', icon: '📍', label: 'Where to look' },
+  'try this': { type: 'try', icon: '✅', label: 'Try this' },
+  try: { type: 'try', icon: '✅', label: 'Try this' },
+  exercise: { type: 'try', icon: '✅', label: 'Try this' },
+};
+
+// Matches a blockquote whose first inline is a bold label, e.g. "<p><strong>Gotcha:</strong> …".
+const CALLOUT_LABEL_RE = /^\s*<p>\s*<strong>\s*([^<:]+?)\s*(?::\s*<\/strong>|<\/strong>\s*:)\s*/i;
+
+// Turn a recognized labeled blockquote into a typed callout; return null to fall back.
+function renderCallout(quote) {
+  const m = CALLOUT_LABEL_RE.exec(quote);
+  if (!m) return null;
+  const t = CALLOUT_TYPES[m[1].trim().toLowerCase()];
+  if (!t) return null;
+  const body = quote.replace(CALLOUT_LABEL_RE, '<p>').trim();
+  return (
+    `<div class="call call-${t.type}">` +
+    `<span class="ic" aria-hidden="true">${t.icon}</span>` +
+    `<div><div class="lab">${t.label}</div><div class="bd">${body}</div></div>` +
+    `</div>`
+  );
+}
+
+marked.use({
+  renderer: {
+    blockquote(quote) {
+      const callout = renderCallout(quote);
+      return callout === null ? false : callout; // false → marked's default blockquote
+    },
+  },
+});
+
 function escapeHtml(s) {
   return String(s)
     .replace(/&/g, '&amp;')
@@ -84,7 +126,7 @@ function renderCheckpointList(states) {
     .map((c) => {
       const pin = c.state === 'done' ? '✓' : String(c.index);
       return (
-        `<li class="cp cp-${c.state}" data-target="section-${c.index}" tabindex="0">` +
+        `<li class="cp cp-${c.state}" data-target="section-${c.index}" role="button" tabindex="0">` +
         `<span class="cp-pin" aria-hidden="true">${pin}</span>` +
         `<span class="cp-text">${escapeHtml(c.title)}</span>` +
         `</li>`
@@ -92,6 +134,9 @@ function renderCheckpointList(states) {
     })
     .join('\n');
 }
+
+// A leading blockquote line "> **TL;DR:** text" — lifted out and shown at the top.
+const TLDR_RE = /^>\s*\*\*\s*TL;?DR\s*:?\s*\*\*\s*(.+)$/im;
 
 function renderSections(sections) {
   const total = sections.filter((s) => s.isCheckpoint).length;
@@ -111,10 +156,21 @@ function renderSections(sections) {
           `<div class="mermaid">${escapeHtml(mer)}</div>` +
           `</div>`;
       }
+      let tldr = '';
+      if (s.isCheckpoint) {
+        const tm = TLDR_RE.exec(bodyMd);
+        if (tm) {
+          tldr =
+            `<div class="tldr"><span class="lab">TL;DR</span>` +
+            `<div class="bd">${marked.parseInline(tm[1].trim())}</div></div>`;
+          bodyMd = bodyMd.replace(tm[0], '').replace(/^\n+/, '').trim();
+        }
+      }
       return (
         `<section id="${id}" class="doc-section">` +
         kicker +
         `<h2>${escapeHtml(heading)}</h2>` +
+        tldr +
         diagram +
         marked.parse(bodyMd) +
         `</section>`
