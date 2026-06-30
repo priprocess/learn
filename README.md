@@ -16,6 +16,21 @@ The map is committed, shared documentation. Per-person progress
 (`.claude/learn-progress.json`) and the generated viewer (`.claude/learn-view.html`)
 are local and git-ignored.
 
+## Install
+
+This repo is its own Claude Code plugin marketplace. In Claude Code:
+
+```
+/plugin marketplace add priprocess/learn
+/plugin install learn@learn
+```
+
+Then run `/learn` in any repository you want to get oriented in.
+
+To update later: `/plugin marketplace update learn`. If you previously installed
+a local copy of this plugin, uninstall it first (via the `/plugin` menu) so the
+marketplace version doesn't collide with it.
+
 ## How it works
 
 - `skills/learn/SKILL.md` — the experience (menu + generate/tour/ask flows).
