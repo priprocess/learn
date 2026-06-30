@@ -147,6 +147,7 @@ describe('renderView', () => {
     assert.ok(/cp-done[^>]*>\s*<span class="cp-pin" aria-hidden="true">✓/.test(html));
     assert.ok(/cp-current[^>]*>\s*<span class="cp-pin" aria-hidden="true">2/.test(html));
     assert.ok(html.includes('data-target="section-1"'));  // navigation hook preserved
+    assert.ok(/<li class="cp [^"]*"[^>]*role="button"[^>]*tabindex="0"/.test(html)); // a11y: interactive role
     assert.ok(!html.includes('you are here'));            // not static anymore
   });
 
@@ -244,6 +245,108 @@ describe('CLI', () => {
     const html = fs.readFileSync(outPath, 'utf8');
     assert.ok(html.includes('cli-demo'));
     assert.ok(html.includes('id="section-1"'));
+  });
+});
+
+const CALLOUT_SECTIONS = [
+  { index: 1, title: 'Data flow', isCheckpoint: true, content:
+    'Intro prose paragraph.\n\n' +
+    '> **Insight:** Decoupling keeps checkout fast.\n\n' +
+    '> **Gotcha:** Vendor calls must be idempotent.\n\n' +
+    '> **Where to look:** `apps/api/create.ts`\n\n' +
+    '> **Try this:** Trace one event end to end.\n\n' +
+    '> **Watch out:** alias for gotcha.\n\n' +
+    '> **Heads up:** not a known label.' },
+];
+
+describe('typed callouts', () => {
+  const html = renderView({
+    meta: { version: '1' }, sections: CALLOUT_SECTIONS,
+    progress: { completed: [], current: 1, map_version: 1 },
+    repoName: 'acme', template: '{{CHECKPOINTS}}|{{SECTIONS}}|{{REPO_NAME}}|{{MAP_VERSION}}|{{MERMAID_LIB}}',
+    mermaidLib: '/*M*/',
+  });
+
+  it('renders each recognized type with the right class, icon and label', () => {
+    assert.ok(/call-insight"><span class="ic" aria-hidden="true">💡<\/span>/.test(html));
+    assert.ok(html.includes('<div class="lab">Insight</div>'));
+    assert.ok(/call-gotcha"><span class="ic" aria-hidden="true">⚠️<\/span>/.test(html));
+    assert.ok(html.includes('<div class="lab">Gotcha</div>'));
+    assert.ok(/call-where"><span class="ic" aria-hidden="true">📍<\/span>/.test(html));
+    assert.ok(html.includes('<div class="lab">Where to look</div>'));
+    assert.ok(/call-try"><span class="ic" aria-hidden="true">✅<\/span>/.test(html));
+    assert.ok(html.includes('<div class="lab">Try this</div>'));
+    assert.ok(html.includes('Vendor calls must be idempotent.'));
+  });
+
+  it('maps an alias to its canonical type ("Watch out" -> gotcha)', () => {
+    assert.ok(html.includes('alias for gotcha.'));
+    assert.ok((html.match(/call-gotcha/g) || []).length >= 2); // Gotcha + Watch out
+  });
+
+  it('keeps inline code inside a callout body', () => {
+    assert.ok(html.includes('<div class="call call-where">'));
+    assert.ok(html.includes('<code>apps/api/create.ts</code>'));
+  });
+
+  it('leaves an unrecognized bold-label blockquote as a normal blockquote', () => {
+    assert.ok(/<blockquote>[\s\S]*Heads up[\s\S]*<\/blockquote>/.test(html));
+    assert.ok(!/<div class="call[^"]*">(?:(?!<\/div>)[\s\S])*Heads up/.test(html));
+  });
+});
+
+describe('callout label colon handling', () => {
+  const html = renderView({
+    meta: { version: '1' },
+    sections: [{ index: 1, title: 'X', isCheckpoint: true, content:
+      '> **Gotcha**: colon outside the bold.\n\n> **Important** no colon at all.' }],
+    progress: { completed: [], current: 1, map_version: 1 },
+    repoName: 'a', template: '{{CHECKPOINTS}}|{{SECTIONS}}|{{REPO_NAME}}|{{MAP_VERSION}}|{{MERMAID_LIB}}',
+    mermaidLib: '/*M*/',
+  });
+  it('accepts a colon placed after the bold label', () => {
+    assert.ok(html.includes('<div class="call call-gotcha">'));
+    assert.ok(html.includes('colon outside the bold.'));
+  });
+  it('ignores a bold lead-in with no colon (renders a normal blockquote)', () => {
+    assert.ok(!/<div class="call[^"]*">(?:(?!<\/div>)[\s\S])*no colon at all/.test(html));
+    assert.ok(/<blockquote>[\s\S]*no colon at all[\s\S]*<\/blockquote>/.test(html));
+  });
+});
+
+const TLDR_SECTIONS = [
+  { index: 1, title: 'Data flow', isCheckpoint: true, content:
+    '> **TL;DR:** Orders write sync, fulfill async.\n\n' +
+    'Body prose here.\n\n```mermaid\ngraph TD; A-->B;\n```' },
+  { index: null, title: 'FAQ', isCheckpoint: false, content:
+    '> **TL;DR:** should stay inline on the FAQ.' },
+];
+
+describe('TL;DR blurb', () => {
+  const html = renderView({
+    meta: { version: '1' }, sections: TLDR_SECTIONS,
+    progress: { completed: [], current: 1, map_version: 1 },
+    repoName: 'acme', template: '{{CHECKPOINTS}}|{{SECTIONS}}|{{REPO_NAME}}|{{MAP_VERSION}}|{{MERMAID_LIB}}',
+    mermaidLib: '/*M*/',
+  });
+
+  it('lifts a checkpoint TL;DR into a .tldr block before the diagram', () => {
+    assert.ok(html.includes('<div class="tldr">'));
+    assert.ok(html.includes('Orders write sync, fulfill async.'));
+    const tldrPos = html.indexOf('class="tldr"');
+    const diagPos = html.indexOf('class="diagram"');
+    const h2Pos = html.indexOf('</h2>');
+    assert.ok(h2Pos < tldrPos && tldrPos < diagPos); // after title, before diagram
+  });
+
+  it('does not duplicate the TL;DR text as a blockquote in the body', () => {
+    assert.ok(!/<blockquote>[\s\S]*Orders write sync[\s\S]*<\/blockquote>/.test(html));
+  });
+
+  it('does not lift TL;DR on a non-checkpoint (FAQ) section', () => {
+    const faq = html.slice(html.indexOf('id="section-faq"'));
+    assert.ok(!faq.includes('class="tldr"'));
+    assert.ok(faq.includes('should stay inline on the FAQ.'));
   });
 });
 

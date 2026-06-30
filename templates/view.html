@@ -12,6 +12,7 @@
     --radius:10px; --elev:0 1px 4px rgba(123,45,59,.10);
     --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     --mono:ui-monospace,Menlo,Monaco,"Courier New",monospace;
+    --insight:#7B2D3B; --gotcha:#9A6410; --where:#2F6F6A; --try:#4E7D52;
     font-family:var(--font);
   }
   @media (prefers-color-scheme:dark){
@@ -19,6 +20,7 @@
       --bg:#1B1916; --fg:#E8E2D9; --fg2:#9A9186; --accent:#E0A07A; --accent-fg:#1B1916;
       --panel:#1F1C18; --card:#211E19; --border:#2C2823; --pin:#3A332B; --chip:#322C24;
       --elev:0 1px 6px rgba(0,0,0,.4);
+      --insight:#E0A07A; --gotcha:#D6A45A; --where:#6FB3AC; --try:#86B98C;
     }
   }
   body.classic{
@@ -26,6 +28,7 @@
     --panel:#F5F1EB; --card:#FFFDF9; --border:#3A3532; --pin:#3A3532; --chip:#E8E0D4;
     --radius:0; --elev:3px 3px 0 rgba(58,53,50,.22);
     --font:var(--mono); --mono:ui-monospace,"Courier New",Menlo,monospace;
+    --insight:#7B2D3B; --gotcha:#9A6410; --where:#2F6F6A; --try:#4E7D52;
     font-family:ui-monospace,"Courier New",Menlo,monospace;
   }
 
@@ -88,6 +91,20 @@
   blockquote{display:flex;gap:11px;margin:18px 0;padding:14px 16px;background:var(--card);
     border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);color:var(--fg2)}
   blockquote p{margin:0;max-width:none}
+  .tldr{display:flex;gap:12px;align-items:flex-start;background:var(--chip);border-radius:var(--radius);padding:13px 16px;margin:0 0 18px;max-width:64ch}
+  .tldr .lab{font:700 10px/1.6 var(--mono);letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);flex:none}
+  .tldr .bd{font-weight:600;color:var(--fg)}
+  .call{display:grid;grid-template-columns:auto 1fr;gap:11px;margin:14px 0;padding:13px 15px;max-width:64ch;
+    background:var(--card);border:1px solid var(--border);border-left:4px solid var(--cc);border-radius:var(--radius)}
+  body.classic .call{border-width:2px;box-shadow:var(--elev)}
+  .call .ic{font-size:16px;line-height:1.4}
+  .call .lab{font:700 11px/1 var(--mono);letter-spacing:1px;text-transform:uppercase;color:var(--cc);margin-bottom:5px}
+  .call .bd{color:var(--fg)}
+  .call .bd p{margin:0;max-width:none}
+  .call-insight{--cc:var(--insight)}
+  .call-gotcha{--cc:var(--gotcha)}
+  .call-where{--cc:var(--where)}
+  .call-try{--cc:var(--try)}
 
   /* ===== Diagram ===== */
   .diagram{position:relative;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin:14px 0}

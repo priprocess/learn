@@ -148,6 +148,23 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/build-view.cjs" \
 The generator reads progress (defaulting to section 1 if the file is missing) and
 bakes the checkpoint states into the page. Re-run it whenever progress changes.
 
+## Checkpoint format (use sparingly)
+
+Within a checkpoint section you may use two optional learning aids. They are
+high-signal accents, not decoration — keep them rare:
+
+- **TL;DR** — at most one, one sentence, only when a gist genuinely helps:
+  `> **TL;DR:** <one-sentence gist>` (rendered as a blurb at the top of the checkpoint).
+- **Typed callouts** — author as a blockquote whose first inline is a bold label:
+  - `> **Insight:** …` — why it's built this way
+  - `> **Gotcha:** …` — a real trap that bites newcomers
+  - `> **Where to look:** \`path/one\`, \`path/two\`` — key files
+  - `> **Try this:** …` — a small hands-on exercise
+
+  **Use 0–2 callouts per checkpoint, never all four, never for ordinary prose.**
+  Prefer Gotcha and Where-to-look — they carry the most onboarding value. A
+  blockquote with any other (or no) label renders as a normal quote.
+
 ## Updating progress
 
 Write `.claude/learn-progress.json` as the user advances:
