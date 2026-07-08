@@ -8,7 +8,7 @@
     {
       "name": "learn",
       "source": "./",
-      "description": "Generate a committed onboarding map and take a guided, visual tour of any repo.",
+      "description": "Get productive in an unfamiliar codebase fast — /learn generates a committed, shareable repo map, then guides you through it with a visual browser tour and live Q&A that gets richer every time someone asks.",
       "version": "0.1.0"
     }
   ]
