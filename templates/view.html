@@ -53,7 +53,6 @@
   .layout{display:flex;min-height:calc(100vh - 53px)}
   nav{width:264px;flex:none;background:var(--panel);border-right:1px solid var(--border);padding:18px 14px;overflow:auto}
   body.classic nav{border-right:2px solid #3A3532}
-  .trail-summary{font:600 10px/1 var(--mono);letter-spacing:1.5px;text-transform:uppercase;color:var(--fg2);margin:2px 6px 14px}
 
   /* ===== Trail rail ===== */
   nav ul{list-style:none;margin:0;padding:0}
@@ -62,17 +61,13 @@
   .cp:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
   .cp:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
   .cp:not(:last-child)::before{content:"";position:absolute;left:21px;top:35px;height:calc(100% - 18px);width:2px;background:var(--pin)}
-  .cp-done:not(:last-child)::before{background:var(--accent)}
   .cp-pin{position:relative;z-index:1;width:26px;height:26px;flex:none;border-radius:50%;
     border:2px solid var(--pin);background:var(--panel);display:flex;align-items:center;justify-content:center;
     font:600 11px/1 var(--mono);color:var(--fg2)}
   body.classic .cp-pin{border-radius:0}
-  .cp-done .cp-pin{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
   .cp.active{color:var(--fg);font-weight:600;background:var(--card);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent)}
-  .cp.active .cp-pin{border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 14%,transparent)}
-  .cp.active:not(.cp-done) .cp-pin{color:var(--accent)}
+  .cp.active .cp-pin{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 14%,transparent)}
   .cp-text{padding-top:4px}
-  .cp-here{display:block;font-weight:400;font-size:11px;color:var(--fg2);margin-top:1px}
 
 
   /* ===== Main / content ===== */
@@ -146,7 +141,7 @@
   </div>
 </header>
 <div class="layout">
-  <nav><div class="trail-summary" id="trailSummary"></div><ul id="cp-list">{{CHECKPOINTS}}</ul></nav>
+  <nav><ul id="cp-list">{{CHECKPOINTS}}</ul></nav>
   <main id="content">{{SECTIONS}}</main>
 </div>
 <button class="ask-chip" id="askChip">💬 Ask a question</button>
@@ -192,17 +187,7 @@
     items.forEach(function(it){
       var on = it.dataset.target === id;
       it.classList.toggle('active', on);
-      if (on) it.setAttribute('aria-current', 'step'); else it.removeAttribute('aria-current');
-      var txt = it.querySelector('.cp-text');
-      var here = it.querySelector('.cp-here');
-      if (on && txt && !here){
-        here = document.createElement('small');
-        here.className = 'cp-here';
-        here.textContent = 'you are here';
-        txt.appendChild(here);
-      } else if (!on && here){
-        here.parentNode.removeChild(here);
-      }
+      if (on) it.setAttribute('aria-current', 'location'); else it.removeAttribute('aria-current');
     });
     renderDiagramIn(id);
     var h = document.querySelector('#' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + ' h2');
@@ -213,10 +198,6 @@
     it.addEventListener('click', function(){ activate(it.dataset.target); });
     it.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); activate(it.dataset.target); } });
   });
-
-  // trail summary
-  var done = document.querySelectorAll('.cp-done').length;
-  document.getElementById('trailSummary').textContent = 'Your trail · ' + done + ' of ' + items.length + ' done';
 
   // theme
   function applyThemeClass(t){
@@ -243,8 +224,7 @@
 
   // mermaid init + initial section
   initMermaid();
-  var current = document.querySelector('.cp-current');
-  activate(current ? current.dataset.target : (items[0] && items[0].dataset.target));
+  activate(items[0] && items[0].dataset.target);
 
   // diagram zoom
   var zoomOverlay = document.getElementById('zoomOverlay');

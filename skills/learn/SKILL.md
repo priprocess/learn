@@ -16,17 +16,15 @@ Relative to the user's current repo (the "target repo"):
 - **Map (committed, shared):** `docs/learn/map.md` by default. On the very first
   generation, ASK the user where to put it (offer `docs/learn/map.md`, repo root, or
   `.learn/`). Remember their answer by reading the file that exists on later runs.
-- **Progress (local, per-person):** `.claude/learn-progress.json`
 - **Viewer (local, disposable):** `.claude/learn-view.html`
 
 The plugin's own files are under `${CLAUDE_PLUGIN_ROOT}` — notably the generator
 `${CLAUDE_PLUGIN_ROOT}/scripts/build-view.cjs`.
 
-Always ensure the two generated files are git-ignored in the target repo. If
-`.gitignore` does not already contain them, append:
+Always ensure the generated viewer is git-ignored in the target repo. If
+`.gitignore` does not already contain it, append:
 
 ```
-.claude/learn-progress.json
 .claude/learn-view.html
 ```
 
@@ -104,16 +102,14 @@ Steps:
 
 The browser shows the prepared material; you narrate and converse in the terminal.
 
-1. Read the map and `.claude/learn-progress.json` (treat missing/`map_version`
-   mismatch per "Edge cases").
+1. Read the map.
 2. **Render and open the viewer.**
-3. Tell the user the viewer is open and which checkpoint they are on. First-timers
-   start at section 1; returning users resume at `current`.
-4. **Narrate the active section** in the terminal, pointing at the real files it
-   references. Invite questions at any time (answer them live — see Mode 3).
-5. When the user says "next"/"done", update progress (add to `completed`, advance
-   `current`), then re-render the viewer so its checkpoint states refresh.
-6. After the last **numbered** section, offer the **good first task**: pick a real
+3. Tell the user the viewer is open; the sidebar is a clickable table of contents
+   (it opens at the first section).
+4. **Narrate a section** in the terminal, pointing at the real files it references.
+   Invite questions at any time (answer them live — see Mode 3). The user browses
+   freely in the viewer — there is no progress to track.
+5. After the last **numbered** section, offer the **good first task**: pick a real
    starter change from `## 5 · Good first tasks` and coach them through it. This is
    optional — they may decline and finish.
 
@@ -139,14 +135,14 @@ Build the self-contained HTML, then open it:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/build-view.cjs" \
-  "<map path>" ".claude/learn-progress.json" ".claude/learn-view.html" "<repo name>"
+  "<map path>" ".claude/learn-view.html" "<repo name>"
 ( command -v open >/dev/null && open ".claude/learn-view.html" ) \
   || ( command -v xdg-open >/dev/null && xdg-open ".claude/learn-view.html" ) \
   || echo "Open .claude/learn-view.html in your browser."
 ```
 
-The generator reads progress (defaulting to section 1 if the file is missing) and
-bakes the checkpoint states into the page. Re-run it whenever progress changes.
+The generator reads the map and bakes the sections into a self-contained page.
+Re-run it whenever the map changes.
 
 ## Checkpoint format (use sparingly)
 
@@ -165,31 +161,17 @@ high-signal accents, not decoration — keep them rare:
   Prefer Gotcha and Where-to-look — they carry the most onboarding value. A
   blockquote with any other (or no) label renders as a normal quote.
 
-## Updating progress
-
-Write `.claude/learn-progress.json` as the user advances:
-
-```json
-{ "completed": [1, 2], "current": 3, "map_version": 1 }
-```
-
 ## Terminal fallback
 
 If you cannot open a browser (headless), if `open`/`xdg-open` are absent, or if the
 user prefers text: do everything in the terminal. The menu is a numbered list, the
-checkpoint map is a text list with ✓/→/○, the diagram degrades to the prose in
-`## 1 · The big picture`, and the enrichment prompt is a `[y/n]`. State is identical
-(same map + progress file), so the user can switch surfaces anytime without losing
-progress.
+checkpoint map is a plain numbered list, the diagram degrades to the prose in
+`## 1 · The big picture`, and the enrichment prompt is a `[y/n]`.
 
 ## Edge cases
 
 - **Not a git repo:** skip staleness; write `generated_at: unknown`.
 - **No map yet:** offer only Generate.
-- **No progress file:** treat as a fresh learner (start at section 1).
-- **`map_version` mismatch** (map refreshed since last visit): tell the user the map
-  changed, keep completed sections that still exist, and otherwise reset progress
-  cleanly. Update `map_version` in the progress file.
 - **Monorepo / very large repo:** ask which package/path to map; cap subagents and
   log uncovered areas.
 - **Map missing/garbled sections:** render whatever sections exist and suggest a

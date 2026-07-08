@@ -56,11 +56,7 @@ describe('parseSections', () => {
 const os = require('node:os');
 const fs = require('node:fs');
 const path = require('node:path');
-const {
-  extractMermaid,
-  readProgress,
-  computeCheckpointStates,
-} = require('./build-view.cjs');
+const { extractMermaid } = require('./build-view.cjs');
 
 describe('extractMermaid', () => {
   it('pulls the mermaid source out of a fenced block', () => {
@@ -69,35 +65,6 @@ describe('extractMermaid', () => {
   });
   it('returns null when there is no mermaid block', () => {
     assert.strictEqual(extractMermaid('no diagram here'), null);
-  });
-});
-
-describe('readProgress', () => {
-  it('defaults gracefully when the file is missing', () => {
-    const p = readProgress(path.join(os.tmpdir(), 'definitely-missing-xyz.json'));
-    assert.deepStrictEqual(p, { completed: [], current: 1, map_version: null });
-  });
-  it('reads a valid progress file', () => {
-    const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'lp-')), 'p.json');
-    fs.writeFileSync(f, JSON.stringify({ completed: [1, 2], current: 3, map_version: 4 }));
-    assert.deepStrictEqual(readProgress(f), { completed: [1, 2], current: 3, map_version: 4 });
-  });
-});
-
-describe('computeCheckpointStates', () => {
-  it('marks done / current / upcoming and ignores non-checkpoints', () => {
-    const sections = [
-      { index: 1, title: 'A', isCheckpoint: true },
-      { index: 2, title: 'B', isCheckpoint: true },
-      { index: 3, title: 'C', isCheckpoint: true },
-      { index: null, title: 'FAQ', isCheckpoint: false },
-    ];
-    const states = computeCheckpointStates(sections, { completed: [1], current: 2, map_version: 1 });
-    assert.deepStrictEqual(states, [
-      { index: 1, title: 'A', state: 'done' },
-      { index: 2, title: 'B', state: 'current' },
-      { index: 3, title: 'C', state: 'upcoming' },
-    ]);
   });
 });
 
@@ -121,7 +88,6 @@ describe('renderView', () => {
   const html = renderView({
     meta: { version: '7' },
     sections: RENDER_SECTIONS,
-    progress: { completed: [1], current: 2, map_version: 7 },
     repoName: 'acme',
     template: FAKE_TEMPLATE,
     mermaidLib: '/*MERMAIDLIB*/',
@@ -140,15 +106,12 @@ describe('renderView', () => {
     assert.ok(html.includes('<li>')); // the bullet list in Setup
   });
 
-  it('bakes in checkpoint states as trail pins', () => {
-    // done pin shows a check; current/upcoming pins show their number.
-    // "you are here" + aria-current are applied at runtime by the viewer JS (to the
-    // viewed section), not baked into the generator output.
-    assert.ok(/cp-done[^>]*>\s*<span class="cp-pin" aria-hidden="true">✓/.test(html));
-    assert.ok(/cp-current[^>]*>\s*<span class="cp-pin" aria-hidden="true">2/.test(html));
-    assert.ok(html.includes('data-target="section-1"'));  // navigation hook preserved
-    assert.ok(/<li class="cp [^"]*"[^>]*role="button"[^>]*tabindex="0"/.test(html)); // a11y: interactive role
-    assert.ok(!html.includes('you are here'));            // not static anymore
+  it('renders checkpoints as plain numbered nav items (no progress state)', () => {
+    assert.ok(/<li class="cp" data-target="section-1" role="button" tabindex="0"><span class="cp-pin" aria-hidden="true">1<\/span>/.test(html));
+    assert.ok(html.includes('data-target="section-2"'));
+    assert.ok(!/cp-(done|current|upcoming)/.test(html)); // no progress states
+    assert.ok(!html.includes('✓'));
+    assert.ok(!html.includes('you are here'));
   });
 
   it('moves the mermaid block into a .mermaid div (not a code fence)', () => {
@@ -210,7 +173,6 @@ describe('buildView', () => {
 
     const result = buildView({
       mapPath,
-      progressPath: path.join(dir, 'missing.json'),
       outPath,
       templatePath: tplPath,
       mermaidPath: merPath,
@@ -222,8 +184,7 @@ describe('buildView', () => {
     assert.ok(html.includes('demo'));
     assert.ok(html.includes('id="section-1"'));
     assert.ok(html.includes('/*MER*/'));
-    // default progress -> section 1 is current
-    assert.ok(/cp-current[^>]*data-target="section-1"/.test(html));
+    assert.ok(html.includes('data-target="section-1"'));
   });
 });
 
@@ -238,7 +199,6 @@ describe('CLI', () => {
     execFileSync('node', [
       path.join(__dirname, 'build-view.cjs'),
       mapPath,
-      path.join(dir, 'no-progress.json'),
       outPath,
       'cli-demo',
     ]);
@@ -262,7 +222,6 @@ const CALLOUT_SECTIONS = [
 describe('typed callouts', () => {
   const html = renderView({
     meta: { version: '1' }, sections: CALLOUT_SECTIONS,
-    progress: { completed: [], current: 1, map_version: 1 },
     repoName: 'acme', template: '{{CHECKPOINTS}}|{{SECTIONS}}|{{REPO_NAME}}|{{MAP_VERSION}}|{{MERMAID_LIB}}',
     mermaidLib: '/*M*/',
   });
@@ -300,7 +259,6 @@ describe('callout label colon handling', () => {
     meta: { version: '1' },
     sections: [{ index: 1, title: 'X', isCheckpoint: true, content:
       '> **Gotcha**: colon outside the bold.\n\n> **Important** no colon at all.' }],
-    progress: { completed: [], current: 1, map_version: 1 },
     repoName: 'a', template: '{{CHECKPOINTS}}|{{SECTIONS}}|{{REPO_NAME}}|{{MAP_VERSION}}|{{MERMAID_LIB}}',
     mermaidLib: '/*M*/',
   });
@@ -325,7 +283,6 @@ const TLDR_SECTIONS = [
 describe('TL;DR blurb', () => {
   const html = renderView({
     meta: { version: '1' }, sections: TLDR_SECTIONS,
-    progress: { completed: [], current: 1, map_version: 1 },
     repoName: 'acme', template: '{{CHECKPOINTS}}|{{SECTIONS}}|{{REPO_NAME}}|{{MAP_VERSION}}|{{MERMAID_LIB}}',
     mermaidLib: '/*M*/',
   });
@@ -363,7 +320,6 @@ describe('real template integration', () => {
     );
     buildView({
       mapPath,
-      progressPath: path.join(dir, 'none.json'),
       outPath,
       templatePath: path.join(__dirname, '..', 'templates', 'view.html'),
       mermaidPath: path.join(__dirname, '..', 'vendor', 'mermaid.min.js'),

@@ -97,41 +97,14 @@ function extractMermaid(content) {
   return m ? m[1].trim() : null;
 }
 
-function readProgress(progressPath) {
-  try {
-    const p = JSON.parse(fs.readFileSync(progressPath, 'utf8'));
-    return {
-      completed: Array.isArray(p.completed) ? p.completed : [],
-      current: typeof p.current === 'number' ? p.current : 1,
-      map_version: p.map_version ?? null,
-    };
-  } catch {
-    return { completed: [], current: 1, map_version: null };
-  }
-}
-
-function computeCheckpointStates(sections, progress) {
-  return sections
-    .filter((s) => s.isCheckpoint)
-    .map((s) => {
-      let state = 'upcoming';
-      if (progress.completed.includes(s.index)) state = 'done';
-      if (s.index === progress.current) state = 'current';
-      return { index: s.index, title: s.title, state };
-    });
-}
-
-function renderCheckpointList(states) {
-  return states
-    .map((c) => {
-      const pin = c.state === 'done' ? '✓' : String(c.index);
-      return (
-        `<li class="cp cp-${c.state}" data-target="section-${c.index}" role="button" tabindex="0">` +
-        `<span class="cp-pin" aria-hidden="true">${pin}</span>` +
-        `<span class="cp-text">${escapeHtml(c.title)}</span>` +
-        `</li>`
-      );
-    })
+function renderCheckpointList(checkpoints) {
+  return checkpoints
+    .map((c) => (
+      `<li class="cp" data-target="section-${c.index}" role="button" tabindex="0">` +
+      `<span class="cp-pin" aria-hidden="true">${c.index}</span>` +
+      `<span class="cp-text">${escapeHtml(c.title)}</span>` +
+      `</li>`
+    ))
     .join('\n');
 }
 
@@ -179,25 +152,24 @@ function renderSections(sections) {
     .join('\n');
 }
 
-function renderView({ meta, sections, progress, repoName, template, mermaidLib }) {
-  const states = computeCheckpointStates(sections, progress);
+function renderView({ meta, sections, repoName, template, mermaidLib }) {
+  const checkpoints = sections.filter((s) => s.isCheckpoint);
   let html = template;
   html = inject(html, '{{REPO_NAME}}', escapeHtml(repoName || 'this repo'));
   html = inject(html, '{{MAP_VERSION}}', escapeHtml(String(meta.version ?? '1')));
-  html = inject(html, '{{CHECKPOINTS}}', renderCheckpointList(states));
+  html = inject(html, '{{CHECKPOINTS}}', renderCheckpointList(checkpoints));
   html = inject(html, '{{SECTIONS}}', renderSections(sections));
   html = inject(html, '{{MERMAID_LIB}}', mermaidLib);
   return html;
 }
 
-function buildView({ mapPath, progressPath, outPath, templatePath, mermaidPath, repoName }) {
+function buildView({ mapPath, outPath, templatePath, mermaidPath, repoName }) {
   const md = fs.readFileSync(mapPath, 'utf8');
   const { meta, body } = parseFrontmatter(md);
   const sections = parseSections(body);
-  const progress = readProgress(progressPath);
   const template = fs.readFileSync(templatePath, 'utf8');
   const mermaidLib = fs.readFileSync(mermaidPath, 'utf8');
-  const html = renderView({ meta, sections, progress, repoName, template, mermaidLib });
+  const html = renderView({ meta, sections, repoName, template, mermaidLib });
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, html);
   return outPath;
@@ -205,20 +177,18 @@ function buildView({ mapPath, progressPath, outPath, templatePath, mermaidPath, 
 
 module.exports = {
   escapeHtml, inject, parseFrontmatter, parseSections,
-  extractMermaid, readProgress, computeCheckpointStates,
-  renderCheckpointList, renderSections, renderView, buildView,
+  extractMermaid, renderCheckpointList, renderSections, renderView, buildView,
 };
 
 if (require.main === module) {
-  const [, , mapPath, progressPath, outPath, repoName] = process.argv;
+  const [, , mapPath, outPath, repoName] = process.argv;
   if (!mapPath || !outPath) {
-    console.error('usage: build-view.cjs <mapPath> <progressPath> <outPath> [repoName]');
+    console.error('usage: build-view.cjs <mapPath> <outPath> [repoName]');
     process.exit(1);
   }
   const root = path.resolve(__dirname, '..');
   const out = buildView({
     mapPath,
-    progressPath: progressPath || '',
     outPath,
     templatePath: path.join(root, 'templates', 'view.html'),
     mermaidPath: path.join(root, 'vendor', 'mermaid.min.js'),
