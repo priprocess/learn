@@ -35,6 +35,10 @@ function renderCallout(quote) {
   );
 }
 
+// Trust model: the map is author-written and lands via the team's normal PR review,
+// so we intentionally let marked pass raw HTML through (headings, prose, callouts,
+// TL;DR). Plain text we interpolate ourselves (titles, repo name) is escaped via
+// escapeHtml. This is not a defense against hostile map content.
 marked.use({
   renderer: {
     blockquote(quote) {
@@ -69,15 +73,30 @@ function parseFrontmatter(md) {
 }
 
 function parseSections(body) {
-  const re = /^##\s+(.*)$/gm;
-  const matches = [...body.matchAll(re)];
+  // Find `## ` headings, but ignore any that fall inside a fenced code block
+  // (``` or ~~~) — maps routinely contain code snippets.
+  const lines = body.split('\n');
+  const heads = [];
+  let fence = null; // the fence char (` or ~) currently open, or null
+  let offset = 0;
+  for (const line of lines) {
+    const fenceMatch = /^\s*(`{3,}|~{3,})/.exec(line);
+    if (fenceMatch) {
+      const marker = fenceMatch[1][0];
+      if (!fence) fence = marker;
+      else if (fence === marker) fence = null;
+    } else if (!fence) {
+      const hm = /^##\s+(.*)$/.exec(line);
+      if (hm) heads.push({ offset, lineLen: line.length, headingText: hm[1].trim() });
+    }
+    offset += line.length + 1; // +1 for the '\n' split removed
+  }
   const sections = [];
-  for (let i = 0; i < matches.length; i++) {
-    const headingText = matches[i][1].trim();
-    const start = matches[i].index + matches[i][0].length;
-    const end = i + 1 < matches.length ? matches[i + 1].index : body.length;
+  for (let i = 0; i < heads.length; i++) {
+    const start = heads[i].offset + heads[i].lineLen; // position of the '\n' after the heading
+    const end = i + 1 < heads.length ? heads[i + 1].offset : body.length;
     const content = body.slice(start, end).trim();
-    const numMatch = /^(\d+)\s*[·.\-:]\s*(.*)$/.exec(headingText);
+    const numMatch = /^(\d+)\s*[·.\-:]\s*(.*)$/.exec(heads[i].headingText);
     if (numMatch) {
       sections.push({
         index: Number(numMatch[1]),
@@ -86,7 +105,7 @@ function parseSections(body) {
         isCheckpoint: true,
       });
     } else {
-      sections.push({ index: null, title: headingText, content, isCheckpoint: false });
+      sections.push({ index: null, title: heads[i].headingText, content, isCheckpoint: false });
     }
   }
   return sections;
@@ -113,11 +132,12 @@ const TLDR_RE = /^>\s*\*\*\s*TL;?DR\s*:?\s*\*\*\s*(.+)$/im;
 
 function renderSections(sections) {
   const total = sections.filter((s) => s.isCheckpoint).length;
+  let stop = 0; // 1-based position among checkpoints (robust to non-contiguous numbering)
   return sections
     .map((s) => {
       const id = s.isCheckpoint ? `section-${s.index}` : 'section-faq';
       const heading = s.isCheckpoint ? `${s.index} · ${s.title}` : s.title;
-      const kicker = s.isCheckpoint ? `<div class="kicker">Stop ${s.index} of ${total}</div>` : '';
+      const kicker = s.isCheckpoint ? `<div class="kicker">Stop ${++stop} of ${total}</div>` : '';
       const mer = extractMermaid(s.content);
       let bodyMd = s.content;
       let diagram = '';
@@ -164,7 +184,9 @@ function renderView({ meta, sections, repoName, template, mermaidLib }) {
 }
 
 function buildView({ mapPath, outPath, templatePath, mermaidPath, repoName }) {
-  const md = fs.readFileSync(mapPath, 'utf8');
+  // Normalize CRLF → LF so Windows-authored maps parse (frontmatter, sections, diagrams
+  // all assume '\n'). The map is committed/shared, so it may be edited on any platform.
+  const md = fs.readFileSync(mapPath, 'utf8').replace(/\r\n/g, '\n');
   const { meta, body } = parseFrontmatter(md);
   const sections = parseSections(body);
   const template = fs.readFileSync(templatePath, 'utf8');

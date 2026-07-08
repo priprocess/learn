@@ -339,3 +339,54 @@ describe('real template integration', () => {
     assert.ok(html.includes('class="mermaid"'));
   });
 });
+
+describe('CRLF robustness', () => {
+  it('parses a Windows (CRLF) map: frontmatter honored and mermaid extracted', () => {
+    const dir = tmpdir();
+    const mapPath = path.join(dir, 'map.md');
+    const outPath = path.join(dir, 'learn-view.html');
+    const crlf = [
+      '---', 'generated_at: x', 'version: 9', 'target: .', '---', '',
+      '## 1 · The big picture', 'Intro.', '```mermaid', 'graph TD; A-->B;', '```', '',
+      '## FAQ', 'none', '',
+    ].join('\r\n');
+    fs.writeFileSync(mapPath, crlf);
+    buildView({
+      mapPath, outPath,
+      templatePath: path.join(__dirname, '..', 'templates', 'view.html'),
+      mermaidPath: path.join(__dirname, '..', 'vendor', 'mermaid.min.js'),
+      repoName: 'crlf-demo',
+    });
+    const html = fs.readFileSync(outPath, 'utf8');
+    assert.ok(html.includes('map v9'), 'frontmatter version parsed (not defaulted/leaked)');
+    assert.ok(html.includes('id="section-1"'));
+    assert.ok(html.includes('<div class="mermaid">graph TD; A--&gt;B;</div>'), 'mermaid extracted despite CRLF');
+  });
+});
+
+describe('parseSections fenced-code safety', () => {
+  it('does not treat a "## " line inside a code fence as a section', () => {
+    const body = [
+      '## 1 · Real', 'intro',
+      '```bash', '## not a heading', 'echo hi', '```',
+      'more text',
+      '## 2 · Also real', 'stuff',
+    ].join('\n');
+    const s = parseSections(body);
+    assert.strictEqual(s.length, 2);
+    assert.strictEqual(s[0].index, 1);
+    assert.strictEqual(s[1].index, 2);
+    assert.ok(s[0].content.includes('## not a heading')); // stays inside section 1's content
+  });
+});
+
+describe('CLI usage error', () => {
+  it('exits non-zero with a usage message when args are missing', () => {
+    let err = null;
+    try {
+      execFileSync('node', [path.join(__dirname, 'build-view.cjs')], { stdio: 'pipe' });
+    } catch (e) { err = e; }
+    assert.ok(err, 'expected a non-zero exit');
+    assert.ok(String(err.stderr).includes('usage: build-view.cjs'));
+  });
+});
