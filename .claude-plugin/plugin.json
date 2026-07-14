@@ -1,6 +1,6 @@
 {
-  "name": "learn",
-  "description": "Get productive in an unfamiliar codebase fast — /learn generates a committed, shareable repo map, then guides you through it with a visual browser tour and live Q&A that gets richer every time someone asks.",
+  "name": "learn-mode",
+  "description": "Get productive in an unfamiliar codebase fast — /learn-mode generates a committed, shareable repo map, then guides you through it with a visual browser tour and live Q&A that gets richer every time someone asks.",
   "version": "0.1.0",
   "author": { "name": "priprocess" },
   "homepage": "https://github.com/priprocess/learn",

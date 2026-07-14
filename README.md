@@ -1,8 +1,8 @@
-# learn
+# learn-mode
 
 A Claude Code plugin that helps you onboard onto an unfamiliar repository.
 
-Run `/learn` to:
+Run `/learn-mode` to:
 
 1. **Generate** a committed onboarding map (`docs/learn/map.md`) by exploring the
    repo in parallel — architecture, setup, entry points, conventions, first tasks.
@@ -21,18 +21,18 @@ This repo is its own Claude Code plugin marketplace. In Claude Code:
 
 ```
 /plugin marketplace add priprocess/learn
-/plugin install learn@learn
+/plugin install learn-mode@priprocess
 ```
 
-Then run `/learn` in any repository you want to get oriented in.
+Then run `/learn-mode` in any repository you want to get oriented in.
 
-To update later: `/plugin marketplace update learn`. If you previously installed
+To update later: `/plugin marketplace update priprocess`. If you previously installed
 a local copy of this plugin, uninstall it first (via the `/plugin` menu) so the
 marketplace version doesn't collide with it.
 
 ## How it works
 
-- `skills/learn/SKILL.md` — the experience (menu + generate/tour/ask flows).
+- `skills/learn-mode/SKILL.md` — the experience (menu + generate/tour/ask flows).
 - `scripts/build-view.cjs` — turns `map.md` into one self-contained
   `learn-view.html` (Mermaid inlined; no server, no external requests).
 - `templates/view.html` — the viewer shell.

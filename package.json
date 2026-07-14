@@ -1,5 +1,5 @@
 {
-  "name": "learn",
+  "name": "learn-mode",
   "version": "0.1.0",
   "description": "Guided, visual repo onboarding plugin for Claude Code",
   "engines": {

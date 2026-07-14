@@ -1,14 +1,14 @@
 {
-  "name": "learn",
+  "name": "priprocess",
   "owner": { "name": "priprocess" },
   "metadata": {
     "description": "Guided, visual repo onboarding for newcomers"
   },
   "plugins": [
     {
-      "name": "learn",
+      "name": "learn-mode",
       "source": "./",
-      "description": "Get productive in an unfamiliar codebase fast — /learn generates a committed, shareable repo map, then guides you through it with a visual browser tour and live Q&A that gets richer every time someone asks.",
+      "description": "Get productive in an unfamiliar codebase fast — /learn-mode generates a committed, shareable repo map, then guides you through it with a visual browser tour and live Q&A that gets richer every time someone asks.",
       "version": "0.1.0"
     }
   ]

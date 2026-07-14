@@ -1,6 +1,6 @@
 ---
-name: learn
-description: Onboard onto an unfamiliar repository. Generates a committed onboarding map via parallel exploration, then runs a visual, resumable guided tour (a static HTML viewer for reading + terminal conversation for asking and advancing). Questions asked enrich the map for the next person. Use when someone wants to learn, get oriented in, or be walked through a new or unfamiliar codebase.
+name: learn-mode
+description: Onboard onto an unfamiliar repository. Generates a committed onboarding map via parallel exploration, then runs a visual guided tour (a static HTML viewer for reading + terminal conversation for asking and advancing). Questions asked enrich the map for the next person. Use when someone wants to learn, get oriented in, or be walked through a new or unfamiliar codebase.
 ---
 
 # Learn — Guided Repo Onboarding
